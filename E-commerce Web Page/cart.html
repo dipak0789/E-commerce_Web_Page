@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <link rel="stylesheet" href="cart.css">
+</head>
+<body>
+    <div class="navbar">
+        <h1>Shopping Cart</h1>
+        <button onclick="goHome()">Home</button>
+    </div>
+    <div id="cartItems" class="cart"></div>
+
+    <script>
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        function displayCart() {
+            const cartItemsDiv = document.getElementById('cartItems');
+            cartItemsDiv.innerHTML = '<h2>Your Cart</h2>';
+            const cartItemsList = document.createElement('ul');
+            cartItemsList.className = 'cart-items';
+            cart.forEach(item => {
+                const images = [item.image];
+                if (item.second_image && item.second_image !== "empty") {
+                    images.push(item.second_image);
+                }
+                let imageSliderHTML = '';
+                if (images.length > 1) {
+                    imageSliderHTML = `
+                        <div class="image-slider">
+                            ${images.map((src, index) => `<img src="${src}" class="slide ${index === 0 ? 'active' : ''}" alt="${item.title}">`).join('')}
+                            <button class="prev" onclick="changeSlide(-1, this)">&#10094;</button>
+                            <button class="next" onclick="changeSlide(1, this)">&#10095;</button>
+                        </div>
+                    `;
+                } else {
+                    imageSliderHTML = `<img src="${item.image}" alt="${item.title}" class="single-image">`;
+                }
+
+                const totalPrice = (parseFloat(item.price) * item.quantity).toFixed(2);
+                const compareAtTotalPrice = (parseFloat(item.compare_at_price) * item.quantity).toFixed(2);
+
+                const cartItem = document.createElement('li');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <div class="cart-item-container">
+                        ${imageSliderHTML}
+                        <div class="cart-item-details">
+                            <p class="title"><strong>${item.title}</strong></p>
+                            <p class="vendor">${item.vendor}</p>
+                            <p class="category"> ${item.product_type}</p>
+                            <p class="price">Price: <span class="item-price">${totalPrice}</span></p>
+                            <p class="compare-at-price">Compare at price: <span class="item-compare-at-price">${compareAtTotalPrice}</span></p>
+                            <div class="quantity-controls">
+                                <button class="quantity-decrease" onclick="changeQuantity('${item.title}', -1)">-</button>
+                                <span class="quantity">${item.quantity}</span>
+                                <button class="quantity-increase" onclick="changeQuantity('${item.title}', 1)">+</button>
+                            </div>
+                            <button class="remove-button" onclick="removeFromCart('${item.title}')">Remove</button>
+                            <button onclick="buyNow('${item.title}')">Buy Now</button>
+                        </div>
+                    </div>
+                `;
+                cartItemsList.appendChild(cartItem);
+            });
+            cartItemsDiv.appendChild(cartItemsList);
+        }
+
+        function changeQuantity(productTitle, change) {
+            const product = cart.find(item => item.title === productTitle);
+            if (product) {
+                product.quantity += change;
+                if (product.quantity <= 0) {
+                    removeFromCart(productTitle);
+                } else {
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    displayCart();
+                }
+                updateCartCount();
+            }
+        }
+
+        function removeFromCart(productTitle) {
+            cart = cart.filter(item => item.title !== productTitle);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            displayCart();
+            updateCartCount();
+        }
+
+        function buyNow(productTitle) {
+            const product = cart.find(p => p.title === productTitle);
+            alert(`You bought ${product.title}!`);
+            removeFromCart(productTitle);
+        }
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        function changeSlide(n, btn) {
+            const slider = btn.parentElement;
+            const slides = slider.getElementsByClassName('slide');
+            let currentSlide = Array.from(slides).findIndex(slide => slide.classList.contains('active'));
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + n + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        function updateCartCount() {
+            const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+            const homeCartCount = document.getElementById('cart-count');
+            if (homeCartCount) {
+                homeCartCount.textContent = cartCount;
+            }
+        }
+
+        displayCart();
+    </script>
+</body>
+</html>
